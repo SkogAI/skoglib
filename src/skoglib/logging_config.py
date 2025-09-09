@@ -9,7 +9,7 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, Type
 import time
 import os
 
@@ -76,12 +76,12 @@ class PerformanceLogger:
         self.threshold_ms = threshold_ms
         self.start_time: Optional[float] = None
     
-    def __enter__(self):
+    def __enter__(self) -> "PerformanceLogger":
         if self.logger.isEnabledFor(logging.DEBUG):
             self.start_time = time.perf_counter()
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[Any]) -> None:
         if self.start_time is not None:
             duration_ms = (time.perf_counter() - self.start_time) * 1000
             if duration_ms >= self.threshold_ms:
