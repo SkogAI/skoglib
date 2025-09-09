@@ -24,7 +24,8 @@ from .exceptions import (
 from .logging_config import (
     configure_logging,
     configure_from_env,
-    get_logger
+    get_logger,
+    get_performance_logger
 )
 
 # Package metadata
@@ -48,6 +49,7 @@ __all__ = [
     "configure_logging",
     "configure_from_env", 
     "get_logger",
+    "get_performance_logger",
     
     # Metadata
     "__version__",
