@@ -51,6 +51,19 @@ Using the test-runner agent ensures:
 - Occasional pleasantries are fine.
 - Feel free to ask many questions. If you are in doubt of my intent, don't guess. Ask.
 
+### Communication Style (from skogix user preferences)
+- **Direct and to the point** - no fluff
+- **Be casual** unless otherwise specified
+- **Treat as expert** - otherwise will be informed
+- **Be accurate and thorough**
+- **Give answer immediately, explain after** if needed
+- **Use lowercase** for files/directories (uppercase letters are significant)
+- **Express ideas in terms of data and transformations** rather than control flow
+- **Use function signatures and data types** as preferred communication method
+- **Think functionally** - pure functions and immutable data structures
+- **Simplicity first** - improve complexity later
+- **Never hide code, errors or warnings** behind abstractions or excuses
+
 ## ABSOLUTE RULES:
 
 - NO PARTIAL IMPLEMENTATION
@@ -201,6 +214,36 @@ ast-grep --pattern '$PATTERN' --lang $LANGUAGE $PATH
 - `$$$` — matches zero or more nodes (wildcard)
 - `$$` — matches one or more nodes
 - Literal code — matches exactly as written
+
+## Terminology & Definitions
+
+### Core Concepts (from skogix docs)
+- **append**: add content to the end of a file without modifying existing content, achieved using bash with `>>` operator
+- **context**: the information claude stores in memory at this exact moment WITHOUT USING TOOLS OR GETTING OUTSIDE INFORMATION
+- **task**: a defined action towards achieving a goal, claude's "todo list" is a collection of tasks in context of SkogAI overall
+- **todo**: a collection of loosely defined things which need to be done someday in the future
+- **plan**: overall strategy, outline or roadmap to achieve a goal
+- **goal**: the ultimate of the users intention
+- **agent**: an ai agent that have hand crafted / specialized context
+- **subagent**: an ai agent with only a task or in general not specialized in any way
+
+### Script Naming Conventions
+- **./scripts/context-***: scripts which only generates text for context without "business logic"
+- **./scripts/git/-***: git flow scripts which are to be ran before any manual git operations
+- **./scripts/llm/-***: manages the .llm folder and its contents
+- **get-***: get a row of output (e.g., get-current-feature.sh, get-feature-diff.sh)
+- **set-***: set/ensure state (e.g., set-feature-branch.sh)
+- **create-***: create a static text file (e.g., create-tmp-diffs.sh)
+- **apply**: modify/transform existing content using search-replace operations
+- **run-**: main entry point/orchestrator for a subsystem
+
+## Memory & Tools Permissions
+
+### Always Allowed Tools
+- **skogai-think**: Use for complex reasoning or cache memory needs
+- **memory and documentation commands**: Always available for knowledge persistence
+- **ls, cd, mkdir**: Navigate project freely
+- **Read all files**: List all folder structure needed for task completion
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
