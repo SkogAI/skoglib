@@ -27,6 +27,15 @@ from .logging_config import (
     get_logger,
     get_performance_logger
 )
+from .config import (
+    SkogAIConfig,
+    get_config,
+    reset_config,
+    find_executable,
+    validate_executable,
+    resolve_path,
+    merge_configs
+)
 
 # Package metadata
 __version__ = "0.1.0"
@@ -50,6 +59,15 @@ __all__ = [
     "configure_from_env", 
     "get_logger",
     "get_performance_logger",
+    
+    # Configuration management
+    "SkogAIConfig",
+    "get_config",
+    "reset_config",
+    "find_executable",
+    "validate_executable",
+    "resolve_path",
+    "merge_configs",
     
     # Metadata
     "__version__",
