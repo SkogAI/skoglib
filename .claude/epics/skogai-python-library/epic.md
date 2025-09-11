@@ -1,8 +1,8 @@
 ---
 name: skogai-python-library
-status: in-development
+status: in-progress
 created: 2025-09-08T19:41:12Z
-progress: 0%
+progress: 13%
 prd: .claude/prds/skogai-python-library.md
 github: https://github.com/SkogAI/skoglib/issues/2
 tasks:

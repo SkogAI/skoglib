@@ -10,11 +10,11 @@ echo ""
 # Find tasks that are open and have no dependencies or whose dependencies are closed
 found=0
 
-for epic_dir in .claude/epics/*/; do
+for epic_dir in .claude/epics/*; do
   [ -d "$epic_dir" ] || continue
   epic_name=$(basename "$epic_dir")
 
-  for task_file in "$epic_dir"[0-9]*.md; do
+  for task_file in "$epic_dir"/[0-9]*.md; do
     [ -f "$task_file" ] || continue
 
     # Check if task is open
