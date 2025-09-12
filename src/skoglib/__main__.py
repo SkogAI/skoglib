@@ -2,5 +2,5 @@ def hello() -> str:
     return "Hello from skoglib!"
 
 
-def main():
+def main() -> None:
     print(hello())

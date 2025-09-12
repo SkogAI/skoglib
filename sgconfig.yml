@@ -1,0 +1,6 @@
+ruleDirs:
+- /home/skogix/dev/skoglib-dev/.claude/rules
+testConfigs:
+- testDir: /home/skogix/dev/skoglib-dev/.claude/tests/rules
+utilDirs:
+- /home/skogix/dev/skoglib-dev/.claude/rules/utils

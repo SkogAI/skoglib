@@ -1,0 +1,12 @@
+{
+  "description": "Template configuration for this project. See https://www.codebuff.com/config for all options.",
+  "startupProcesses": [
+    {
+      "name": "tests",
+      "command": "uv run python -m pytest -v --tb=short",
+      "enabled": false,
+      "stdoutFile": "logs/tests.log"
+    }
+  ],
+  "fileChangeHooks": []
+}
