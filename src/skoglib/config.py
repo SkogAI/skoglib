@@ -11,7 +11,6 @@ import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Union
-from functools import lru_cache
 
 from .exceptions import ConfigurationError
 from .logging_config import get_logger

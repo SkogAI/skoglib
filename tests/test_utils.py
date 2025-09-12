@@ -10,7 +10,7 @@ import pytest
 import tempfile
 from pathlib import Path
 from typing import Dict, Any
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from skoglib.utils import (
     time_execution,

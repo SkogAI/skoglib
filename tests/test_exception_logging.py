@@ -189,7 +189,7 @@ class TestExceptionLogging(TestCase):
         except SkogAIError:
             # Should catch as SkogAIError
             caught_as_base = True
-        except:
+        except Exception:
             caught_as_base = False
 
         self.assertTrue(caught_as_base)
@@ -200,7 +200,7 @@ class TestExceptionLogging(TestCase):
         except ExecutableNotFoundError:
             # Should catch as specific type
             caught_as_specific = True
-        except:
+        except Exception:
             caught_as_specific = False
 
         self.assertTrue(caught_as_specific)

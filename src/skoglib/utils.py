@@ -8,7 +8,7 @@ by the configuration management.
 
 import time
 import functools
-from typing import Any, Callable, Tuple, TypeVar, Dict
+from typing import Any, Callable, Tuple, TypeVar, Dict, Optional
 from pathlib import Path
 
 from .logging_config import get_logger
@@ -41,7 +41,7 @@ def time_execution(func: Callable) -> Tuple[Any, float]:
         end_time = time.perf_counter()
         duration = end_time - start_time
         
-        logger.debug(f"Function execution completed", extra={
+        logger.debug("Function execution completed", extra={
             "function": getattr(func, '__name__', str(func)),
             "duration_seconds": duration
         })
@@ -52,7 +52,7 @@ def time_execution(func: Callable) -> Tuple[Any, float]:
         end_time = time.perf_counter()
         duration = end_time - start_time
         
-        logger.error(f"Function execution failed", extra={
+        logger.error("Function execution failed", extra={
             "function": getattr(func, '__name__', str(func)),
             "duration_seconds": duration,
             "error": str(e)
@@ -170,7 +170,7 @@ def timing_decorator(func: F) -> F:
 
 
 def safe_dict_get(dictionary: Dict[str, Any], key: str, default: Any = None, 
-                  expected_type: type = None) -> Any:
+                  expected_type: Optional[type] = None) -> Any:
     """
     Safely get a value from a dictionary with optional type checking.
     
