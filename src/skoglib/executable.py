@@ -5,11 +5,10 @@ This module provides the main `run_executable` function for launching and
 managing subprocess execution with proper error handling and result capture.
 """
 
-import logging
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional, Dict, Any, Union, List
+from typing import Optional, Dict, Union, List
 from dataclasses import dataclass
 
 from .exceptions import ExecutableNotFoundError, ExecutionError, ConfigurationError
