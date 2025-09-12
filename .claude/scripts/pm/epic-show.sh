@@ -49,7 +49,7 @@ task_count=0
 open_count=0
 closed_count=0
 
-for task_file in "$epic_dir"/[0-9]*.md; do
+for task_file in "$epic_dir"/tasks/[0-9]*.md; do
   [ -f "$task_file" ] || continue
 
   task_num=$(basename "$task_file" .md)
