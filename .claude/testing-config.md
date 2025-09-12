@@ -1,50 +1,41 @@
 ---
 framework: pytest
-test_command: uv run pytest
-created: 2025-09-10T15:01:56Z
+test_command: pytest
+created: 2025-09-11T15:48:55Z
 ---
 
 # Testing Configuration
 
 ## Framework
-- Type: Pytest
+- Type: pytest
 - Version: 8.4.2
 - Config File: pyproject.toml
-- Package Manager: UV
 
 ## Test Structure
-- Test Directory: tests/
+- Test Directory: tests
 - Test Files: 5 files found
-- Total Test Cases: 62 tests
 - Naming Pattern: test_*.py
 
 ## Commands
-- Run All Tests: `uv run pytest tests/ -v`
-- Run Specific Test: `uv run pytest tests/{test_file} -v`
-- Run with Coverage: `uv run pytest tests/ --cov=src/skoglib --cov-report=term-missing`
-- Run with Debugging: `uv run pytest tests/ -v --tb=long -s`
+- Run All Tests: `pytest -v --tb=short`
+- Run Specific Test: `pytest -v {test_file}`
+- Run with Coverage: `pytest --cov=skoglib --cov-report=term-missing`
 
 ## Environment
 - Python Version: >=3.13
-- Required ENV vars: PYTHONPATH set to project root
-- Package Management: UV with pyproject.toml
-- Dev Dependencies: pytest, pytest-cov, mypy, ruff, bandit, coverage
-
-## Test Files
-- test_exception_logging.py: Exception logging integration tests
-- test_import_performance.py: Performance and import timing tests
-- test_logging_config.py: Core logging configuration tests
-- test_logging_integration.py: End-to-end logging integration tests
+- Virtual Environment: .venv
+- Required Dependencies: pytest>=8.4.2, pytest-cov>=4.1.0
 
 ## Test Runner Agent Configuration
 - Use verbose output for debugging
 - Run tests sequentially (no parallel)
-- Capture full stack traces with --tb=long
+- Capture full stack traces
 - No mocking - use real implementations
 - Wait for each test to complete
 
-## Pytest Configuration
-- Root directory: /home/skogix/dev/skoglib/
-- Configuration in pyproject.toml [tool.pytest.ini_options]
-- Test discovery: automatic via test_*.py pattern
-- Coverage tracking available via pytest-cov
+## Test Files
+- test_import_performance.py - Performance benchmarking
+- test_logging_integration.py - Logging system tests
+- test_exception_logging.py - Exception handling tests
+- test_logging_config.py - Configuration tests
+- __init__.py - Test package initialization
