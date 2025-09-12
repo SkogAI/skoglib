@@ -9,7 +9,7 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, Union, Type
+from typing import Optional, Any, Union, Type
 import time
 import os
 
@@ -219,7 +219,7 @@ def get_performance_logger(name: str) -> PerformanceLogger:
 if not os.getenv("PYTEST_CURRENT_TEST") and not logging.getLogger(LOGGER_PREFIX).handlers:
     try:
         configure_from_env()
-    except Exception as e:
+    except Exception:
         # Fail silently on configuration errors to maintain library reliability
         # Users can explicitly configure logging if needed
         pass
