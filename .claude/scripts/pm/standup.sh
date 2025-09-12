@@ -24,10 +24,10 @@ if [ -n "$recent_files" ]; then
   task_count=$(echo "$recent_files" | grep -c "/[0-9]*.md" || echo 0)
   update_count=$(echo "$recent_files" | grep -c "/updates/" || echo 0)
 
-  [ $prd_count -gt 0 ] && echo "  • Modified $prd_count PRD(s)"
-  [ $epic_count -gt 0 ] && echo "  • Updated $epic_count epic(s)"
-  [ $task_count -gt 0 ] && echo "  • Worked on $task_count task(s)"
-  [ $update_count -gt 0 ] && echo "  • Posted $update_count progress update(s)"
+  [ "$prd_count" -gt 0 ] && echo "  • Modified $prd_count PRD(s)"
+  [ "$epic_count" -gt 0 ] && echo "  • Updated $epic_count epic(s)"
+  [ "$task_count" -gt 0 ] && echo "  • Worked on $task_count task(s)"
+  [ "$update_count" -gt 0 ] && echo "  • Posted $update_count progress update(s)"
 else
   echo "  No activity recorded today"
 fi
