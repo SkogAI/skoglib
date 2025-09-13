@@ -1,0 +1,6 @@
+#!/bin/bash
+# Mock SkogAI tool that simulates successful execution
+echo "SkogAI Mock Tool v1.0"
+echo "Arguments received: $@"
+echo "Processing complete"
+exit 0

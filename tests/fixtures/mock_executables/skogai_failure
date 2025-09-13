@@ -1,0 +1,6 @@
+#!/bin/bash
+# Mock SkogAI tool that simulates failure
+echo "SkogAI Mock Tool v1.0" 
+echo "Error: Invalid configuration" >&2
+echo "Processing failed" >&2
+exit 2

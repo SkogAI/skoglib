@@ -1,6 +1,10 @@
-def hello() -> str:
-    return "Hello from skoglib!"
+"""
+Main entry point when skoglib is run as a module.
 
+Usage: python -m skoglib
+"""
 
-def main() -> None:
-    print(hello())
+from . import main
+
+if __name__ == "__main__":
+    main()
