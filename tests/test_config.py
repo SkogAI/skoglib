@@ -11,10 +11,8 @@ import threading
 import time
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from unittest.mock import patch
 
-import pytest
 
 from skoglib.config import (
     SkogAIConfig,

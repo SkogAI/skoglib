@@ -402,7 +402,7 @@ class TestLoggingIntegration(TestCase):
         # Clear any previous calls
         self.mock_handler.reset_mock()
         
-        with get_performance_logger("integration_test") as perf:
+        with get_performance_logger("integration_test"):
             time.sleep(0.001)  # Small delay to ensure timing
         
         # Should have logged the performance timing

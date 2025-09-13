@@ -180,7 +180,7 @@ def run_executable(
     # Execute with timing and performance logging
     start_time = time.time()
     
-    with get_performance_logger(f"execute_{executable}") as perf_logger:
+    with get_performance_logger(f"execute_{executable}"):
         try:
             result = subprocess.run(
                 command,
