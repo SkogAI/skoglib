@@ -1,0 +1,6 @@
+Sample input data for testing
+This file contains multiple lines
+with different types of content
+including numbers: 123, 456
+and special characters: !@#$%^&*()
+End of sample data

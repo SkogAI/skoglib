@@ -1,0 +1,8 @@
+#!/bin/bash
+# Mock tool that outputs environment variables
+echo "Environment variables:"
+for var in TEST_VAR MOCK_CONFIG PATH; do
+    if [ -n "${!var}" ]; then
+        echo "$var=${!var}"
+    fi
+done

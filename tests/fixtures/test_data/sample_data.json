@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "created": "2024-01-01",
+    "purpose": "testing"
+  },
+  "data": [
+    {"id": 1, "name": "item1", "value": 100},
+    {"id": 2, "name": "item2", "value": 200},
+    {"id": 3, "name": "item3", "value": 300}
+  ],
+  "settings": {
+    "enabled": true,
+    "timeout": 5000
+  }
+}
