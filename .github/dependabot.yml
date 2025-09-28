@@ -1,3 +1,6 @@
+# Dependabot configuration for automated dependency updates
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
 version: 2
 updates:
   # Python dependencies
@@ -20,46 +23,50 @@ updates:
     labels:
       - "dependencies"
       - "python"
-    # Group dependency updates to reduce PR noise
+    # Group related updates to reduce PR noise
     groups:
-      development-dependencies:
+      dev-dependencies:
         patterns:
           - "pytest*"
-          - "mypy*"
+          - "mypy*" 
           - "ruff*"
           - "bandit*"
           - "coverage*"
         update-types:
           - "minor"
           - "patch"
-      security-updates:
+      testing-dependencies:
         patterns:
-          - "*"
+          - "*test*"
+          - "*mock*"
+          - "*fixture*"
+      security-dependencies:
+        patterns:
+          - "*security*"
+          - "*crypto*"
+          - "*auth*"
         update-types:
-          - "security"
-    # Allow automatic merging for patch-level updates
+          - "patch"
+    # Only create PRs for security updates on weekends
     allow:
       - dependency-type: "direct"
-        update-type: "security"
       - dependency-type: "indirect"
         update-type: "security"
     ignore:
-      # Ignore major version updates for core dependencies to prevent breaking changes
+      # Ignore major version updates for these stable packages
       - dependency-name: "python-dotenv"
         update-types: ["version-update:semver-major"]
 
-  # GitHub Actions dependencies
+  # GitHub Actions dependencies  
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
+      day: "monday" 
       time: "06:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
     reviewers:
-      - "SkogAI/maintainers"
-    assignees:
       - "SkogAI/maintainers"
     commit-message:
       prefix: "ci"
@@ -68,7 +75,7 @@ updates:
       - "dependencies"
       - "github-actions"
     groups:
-      github-actions:
+      actions-dependencies:
         patterns:
           - "*"
         update-types:

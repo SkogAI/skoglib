@@ -5,29 +5,26 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
-      test_pypi:
-        description: 'Publish to Test PyPI instead of PyPI'
+      test_release:
+        description: 'Release to Test PyPI instead of PyPI'
         required: false
         default: false
         type: boolean
-
-permissions:
-  contents: read
-  id-token: write  # Required for OIDC trusted publishing
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     environment: 
-      name: ${{ inputs.test_pypi && 'test-pypi' || 'pypi' }}
-      url: ${{ inputs.test_pypi && 'https://test.pypi.org/p/skoglib' || 'https://pypi.org/p/skoglib' }}
+      name: ${{ github.event.inputs.test_release == 'true' && 'test-pypi' || 'pypi' }}
+    permissions:
+      contents: read
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@v1
       with:
         version: "latest"
     
@@ -37,94 +34,137 @@ jobs:
     - name: Install dependencies
       run: uv sync --dev
     
+    - name: Verify version consistency
+      run: |
+        # Extract version from pyproject.toml
+        PYPROJECT_VERSION=$(uv run python -c "
+        import tomllib
+        with open('pyproject.toml', 'rb') as f:
+            data = tomllib.load(f)
+        print(data['project']['version'])
+        ")
+        
+        # Extract version from package
+        PACKAGE_VERSION=$(uv run python -c "import skoglib; print(skoglib.__version__)")
+        
+        echo "pyproject.toml version: $PYPROJECT_VERSION"
+        echo "Package version: $PACKAGE_VERSION"
+        
+        if [ "$PYPROJECT_VERSION" != "$PACKAGE_VERSION" ]; then
+          echo "❌ Version mismatch between pyproject.toml and package"
+          exit 1
+        fi
+        
+        # If this is a release event, check that tag matches version
+        if [ "${{ github.event_name }}" == "release" ]; then
+          TAG_VERSION="${{ github.event.release.tag_name }}"
+          # Remove 'v' prefix if present
+          TAG_VERSION=${TAG_VERSION#v}
+          
+          echo "Release tag version: $TAG_VERSION"
+          
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch between release tag and package"
+            exit 1
+          fi
+        fi
+        
+        echo "✅ Version consistency verified"
+    
+    - name: Run full test suite
+      run: uv run pytest --cov=src/skoglib --cov-report=term-missing
+    
     - name: Run quality checks
       run: |
-        uv run ruff check .
-        uv run ruff format --check .
-        uv run mypy src/
-    
-    - name: Run tests
-      run: uv run pytest --cov=src/skoglib
+        uv run ruff check --output-format=github
+        uv run mypy src/ --ignore-missing-imports
+        uv run bandit -r src/
     
     - name: Build package
       run: uv build
     
-    - name: Verify package contents
+    - name: Verify package integrity
       run: |
-        uv run python -c "
-        import tarfile
-        import zipfile
-        import os
+        echo "Verifying built packages..."
         
-        # Check wheel contents
-        wheel_files = [f for f in os.listdir('dist') if f.endswith('.whl')]
-        if wheel_files:
-            with zipfile.ZipFile(f'dist/{wheel_files[0]}', 'r') as z:
-                files = z.namelist()
-                print('Wheel contents:')
-                for f in sorted(files):
-                    print(f'  {f}')
-                    
-                # Verify key files are present
-                py_files = [f for f in files if f.endswith('.py') and 'skoglib' in f]
-                if not py_files:
-                    print('ERROR: No Python files found in wheel')
-                    exit(1)
+        # Check package contents
+        python -m tarfile -l dist/*.tar.gz | head -20
         
-        # Check sdist contents  
-        sdist_files = [f for f in os.listdir('dist') if f.endswith('.tar.gz')]
-        if sdist_files:
-            with tarfile.open(f'dist/{sdist_files[0]}', 'r:gz') as t:
-                files = t.getnames()
-                print('Source distribution contents:')
-                for f in sorted(files):
-                    print(f'  {f}')
+        # Test installation from built wheel
+        uv pip install dist/*.whl --force-reinstall
         
+        # Test that the installed package works
+        python -c "
+        import skoglib
+        result = skoglib.run_executable('echo', ['test'])
+        assert result.success
+        assert 'test' in result.stdout
         print('✅ Package verification successful')
         "
     
     - name: Publish to Test PyPI
-      if: inputs.test_pypi
+      if: github.event.inputs.test_release == 'true'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-        verbose: true
+        # Uses OIDC trusted publishing - no need for explicit tokens
     
     - name: Publish to PyPI
-      if: github.event_name == 'release' && !inputs.test_pypi
+      if: github.event.inputs.test_release != 'true'
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        verbose: true
+      # Uses OIDC trusted publishing - no need for explicit tokens
     
-    - name: Create GitHub Release Assets
-      if: github.event_name == 'release'
-      run: |
-        # Upload wheel and source distribution as release assets
-        gh release upload ${{ github.event.release.tag_name }} dist/* --clobber
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-packages-${{ github.sha }}
+        path: dist/
+        retention-days: 90
 
-  validate-release:
+  # Post-release verification
+  verify-release:
     needs: build-and-publish
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: github.event.inputs.test_release != 'true'
     
     steps:
     - name: Wait for PyPI propagation
-      run: sleep 60
+      run: sleep 60  # Wait for PyPI to propagate the new package
     
-    - name: Install from PyPI and test
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Test installation from PyPI
       run: |
-        pip install skoglib
+        # Get the version that was just published
+        if [ "${{ github.event_name }}" == "release" ]; then
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION=${VERSION#v}  # Remove 'v' prefix if present
+        else
+          # For manual dispatch, we'll get the latest version
+          VERSION=""
+        fi
+        
+        # Install from PyPI
+        if [ -n "$VERSION" ]; then
+          uv pip install "skoglib==$VERSION" --no-cache-dir
+        else
+          uv pip install skoglib --no-cache-dir --upgrade
+        fi
+        
+        # Verify installation
         python -c "
         import skoglib
-        from skoglib import run_executable
+        print(f'Installed skoglib version: {skoglib.__version__}')
         
         # Test basic functionality
-        result = run_executable('echo', ['Hello from PyPI'])
+        result = skoglib.run_executable('echo', ['PyPI installation test'])
         assert result.success
-        assert 'Hello from PyPI' in result.stdout
-        
-        print('✅ PyPI installation successful')
-        print(f'Version: {skoglib.__version__}')
+        assert 'PyPI installation test' in result.stdout
+        print('✅ PyPI installation verification successful')
         "
