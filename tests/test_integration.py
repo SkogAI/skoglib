@@ -6,11 +6,10 @@ Tests end-to-end workflows with actual system tools and mock executables.
 
 import os
 import tempfile
-import time
 from pathlib import Path
 from unittest import TestCase
 
-from skoglib import run_executable, ExecutableNotFoundError, ExecutionError
+from skoglib import run_executable, ExecutionError
 
 
 class TestRealExecutableIntegration(TestCase):

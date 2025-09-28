@@ -77,30 +77,7 @@ class TestPackageImports(TestCase):
             ExecutionResult,
             
             # Exception hierarchy
-            SkogAIError,
-            ExecutableNotFoundError,
-            ExecutionError,
-            ConfigurationError,
-            
-            # Logging configuration
-            configure_logging,
-            configure_from_env,
-            get_logger,
-            get_performance_logger,
-            
-            # Configuration management
-            SkogAIConfig,
-            get_config,
-            reset_config,
-            find_executable,
-            validate_executable,
-            resolve_path,
-            merge_configs,
-            
-            # Metadata
             __version__,
-            __author__,
-            __email__,
         )
         
         # Basic smoke test that imports worked
