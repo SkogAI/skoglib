@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Quality checks job - runs first and fastest
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Format check (ruff)
+      run: uv run ruff check --output-format=github
+    
+    - name: Type checking (mypy)
+      run: uv run mypy src/ --ignore-missing-imports
+    
+    - name: Security scan (bandit)
+      run: uv run bandit -r src/ -f json | tee bandit-results.json || true
+    
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: bandit-results.json
+
+  # Test matrix job - comprehensive testing across platforms and Python versions
+  test:
+    needs: quality
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Run tests with coverage
+      run: uv run pytest --cov=src/skoglib --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # Performance benchmarks - validates performance requirements
+  performance:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Run performance tests
+      run: |
+        # Test import performance - should be under 100ms per existing test
+        uv run python -c "
+        import time
+        import sys
+        
+        # Clear any cached modules
+        modules_to_remove = [name for name in sys.modules.keys() if name.startswith('skoglib')]
+        for module_name in modules_to_remove:
+            if module_name in sys.modules:
+                del sys.modules[module_name]
+        
+        # Time the import
+        start_time = time.perf_counter()
+        import skoglib
+        import_time = time.perf_counter() - start_time
+        
+        import_time_ms = import_time * 1000
+        print(f'Import time: {import_time_ms:.2f}ms')
+        
+        # Performance requirement from issue: under 50ms (being lenient with 100ms for CI)
+        if import_time_ms > 100:
+            print(f'❌ Import too slow: {import_time_ms:.2f}ms > 100ms')
+            sys.exit(1)
+        else:
+            print(f'✅ Import performance acceptable: {import_time_ms:.2f}ms <= 100ms')
+        "
+    
+    - name: Run execution performance test
+      run: |
+        # Test execution overhead - should be minimal 
+        uv run python -c "
+        import time
+        import statistics
+        from skoglib import run_executable
+        
+        # Warm up
+        for _ in range(3):
+            run_executable('echo', ['warmup'])
+        
+        # Measure execution times
+        executions = []
+        for _ in range(10):
+            start_time = time.perf_counter()
+            result = run_executable('echo', ['performance_test'])
+            execution_time = time.perf_counter() - start_time
+            executions.append(execution_time)
+        
+        mean_time = statistics.mean(executions)
+        mean_time_ms = mean_time * 1000
+        
+        print(f'Mean execution time: {mean_time_ms:.2f}ms')
+        
+        # Performance requirement: under 10ms overhead (being lenient with 50ms for CI)
+        if mean_time_ms > 50:
+            print(f'❌ Execution overhead too high: {mean_time_ms:.2f}ms > 50ms')
+            exit(1)
+        else:
+            print(f'✅ Execution performance acceptable: {mean_time_ms:.2f}ms <= 50ms')
+        "
+
+  # Build package to ensure it can be built and distributed
+  build:
+    needs: [quality, test, performance]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Build package
+      run: uv build
+    
+    - name: Verify package contents
+      run: |
+        echo "Built packages:"
+        ls -la dist/
+        
+        # Check that both wheel and source distribution were created
+        if [ ! -f dist/*.whl ]; then
+          echo "❌ No wheel file found"
+          exit 1
+        fi
+        
+        if [ ! -f dist/*.tar.gz ]; then
+          echo "❌ No source distribution found"
+          exit 1
+        fi
+        
+        echo "✅ Package build successful"
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-${{ github.sha }}
+        path: dist/

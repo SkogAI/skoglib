@@ -8,10 +8,8 @@ error scenarios, timeout handling, and edge cases.
 import os
 import tempfile
 import time
-import subprocess
-from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from skoglib.executable import run_executable, ExecutionResult, _find_executable
 from skoglib.exceptions import ExecutableNotFoundError, ExecutionError, ConfigurationError

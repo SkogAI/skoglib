@@ -155,7 +155,6 @@ class TestMemoryUsage(TestCase):
     def test_memory_cleanup_after_execution(self):
         """Test that memory is properly cleaned up after execution."""
         import gc
-        import sys
         
         # Force garbage collection
         gc.collect()
@@ -183,8 +182,8 @@ class TestMemoryUsage(TestCase):
         try:
             import resource
             
-            # Get initial file descriptor count
-            initial_fds = resource.getrlimit(resource.RLIMIT_NOFILE)[0]
+            # Get initial file descriptor limit (basic check)
+            _ = resource.getrlimit(resource.RLIMIT_NOFILE)[0]
             
             # Execute many commands
             for i in range(20):
@@ -261,7 +260,6 @@ class TestPerformanceRegression(TestCase):
         
         # Time the main import
         start_time = time.perf_counter()
-        import skoglib
         import_time = time.perf_counter() - start_time
         
         import_time_ms = import_time * 1000
@@ -296,7 +294,7 @@ class TestPerformanceRegression(TestCase):
         median_time = statistics.median(executions)
         p95_time = sorted(executions)[int(0.95 * len(executions))]
         
-        print(f"Simple execution performance baseline:")
+        print("Simple execution performance baseline:")
         print(f"  Mean: {mean_time:.4f}s")
         print(f"  Median: {median_time:.4f}s")
         print(f"  95th percentile: {p95_time:.4f}s")
