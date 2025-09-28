@@ -23,6 +23,7 @@ class TestImportPerformance(TestCase):
         """Test that logging_config import is under 50ms."""
         start_time = time.perf_counter()
         
+        from skoglib import logging_config
         
         import_time_ms = (time.perf_counter() - start_time) * 1000
         
@@ -34,6 +35,7 @@ class TestImportPerformance(TestCase):
         """Test that exceptions import is under 50ms."""
         start_time = time.perf_counter()
         
+        from skoglib import exceptions
         
         import_time_ms = (time.perf_counter() - start_time) * 1000
         
@@ -45,6 +47,7 @@ class TestImportPerformance(TestCase):
         """Test that executable import is under 50ms."""
         start_time = time.perf_counter()
         
+        from skoglib import executable
         
         import_time_ms = (time.perf_counter() - start_time) * 1000
         
@@ -56,6 +59,7 @@ class TestImportPerformance(TestCase):
         """Test that main skoglib import is under 50ms."""
         start_time = time.perf_counter()
         
+        import skoglib
         
         import_time_ms = (time.perf_counter() - start_time) * 1000
         

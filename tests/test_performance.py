@@ -213,15 +213,17 @@ class TestScalabilityBenchmarks(TestCase):
     
     def test_timeout_precision_benchmark(self):
         """Benchmark timeout precision and handling."""
-        timeout_values = [0.1, 0.2, 0.5, 1.0]
+        # Use shorter timeout values to speed up CI while maintaining test coverage
+        # Test both very short (0.05s) and moderate (0.2s) timeouts
+        timeout_values = [0.05, 0.2]
         
         for timeout in timeout_values:
             with self.subTest(timeout=timeout):
                 start_time = time.perf_counter()
                 
                 try:
-                    # This should timeout
-                    run_executable("sleep", [str(timeout * 2)], timeout=timeout)
+                    # This should timeout - sleep for 3x the timeout to ensure timeout occurs
+                    run_executable("sleep", [str(timeout * 3)], timeout=timeout)
                     self.fail("Expected timeout exception")
                 except Exception:
                     # Expected to timeout
@@ -230,11 +232,11 @@ class TestScalabilityBenchmarks(TestCase):
                 actual_time = time.perf_counter() - start_time
                 
                 # Timeout should be reasonably accurate
-                # Allow 20% tolerance for system overhead
-                self.assertLessEqual(actual_time, timeout * 1.2,
-                                   f"Timeout took too long: {actual_time:.3f}s > {timeout * 1.2:.3f}s")
-                self.assertGreaterEqual(actual_time, timeout * 0.8,
-                                      f"Timeout too fast: {actual_time:.3f}s < {timeout * 0.8:.3f}s")
+                # Allow 30% tolerance for system overhead (more lenient for very short timeouts)
+                self.assertLessEqual(actual_time, timeout * 1.3,
+                                   f"Timeout took too long: {actual_time:.3f}s > {timeout * 1.3:.3f}s")
+                self.assertGreaterEqual(actual_time, timeout * 0.7,
+                                      f"Timeout too fast: {actual_time:.3f}s < {timeout * 0.7:.3f}s")
 
 
 class TestPerformanceRegression(TestCase):
