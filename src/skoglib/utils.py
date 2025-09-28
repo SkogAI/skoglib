@@ -20,7 +20,7 @@ logger = get_logger("utils")
 F = TypeVar('F', bound=Callable[..., Any])
 
 
-def time_execution(func: Callable) -> Tuple[Any, float]:
+def time_execution(func: Callable[[], Any]) -> Tuple[Any, float]:
     """
     Execute a function and measure its execution time.
     
@@ -134,7 +134,7 @@ def timing_decorator(func: F) -> F:
         ...     return "done"
     """
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         start_time = time.perf_counter()
         
         try:
