@@ -98,6 +98,10 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Configured logger instance
     """
+    # Special case: "root" returns the base skoglib logger for backward compatibility
+    if name == "root":
+        return logging.getLogger(LOGGER_PREFIX)
+    
     if not name.startswith(LOGGER_PREFIX):
         name = f"{LOGGER_PREFIX}.{name}"
     
