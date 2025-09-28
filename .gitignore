@@ -5,6 +5,43 @@ build/
 dist/
 wheels/
 *.egg-info
+*.whl
 
 # Virtual environments
 .venv
+venv/
+env/
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Security and CI artifacts
+bandit-results.sarif
+bandit-report.json
+bandit-report.txt
+pip-audit-results.sarif
+audit-results.json
+security-comment.md
+security-summary.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# UV files
+.python-version
