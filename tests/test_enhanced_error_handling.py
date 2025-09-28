@@ -7,7 +7,6 @@ serialization capabilities, and timestamp functionality.
 
 import time
 import unittest
-from unittest.mock import patch
 
 from skoglib import (
     SkogAIError,
