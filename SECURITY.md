@@ -2,142 +2,99 @@
 
 ## Supported Versions
 
-We provide security updates for the following versions of skoglib:
+The following versions of skoglib are currently supported with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
 | 0.1.x   | :white_check_mark: |
 
-## Security Features
-
-### Built-in Security Measures
-
-- **Input Validation**: All executable paths and arguments are validated before execution
-- **Path Sanitization**: Prevents path traversal and injection attacks
-- **Secure Defaults**: Conservative security settings by default
-- **Error Handling**: Secure error messages that don't leak sensitive information
-- **Logging**: Security-conscious logging that avoids sensitive data exposure
-
-### CI/CD Security
-
-Our development pipeline includes comprehensive security measures:
-
-- **Static Application Security Testing (SAST)**: Bandit scans for security vulnerabilities
-- **Dependency Scanning**: Regular vulnerability checks using pip-audit
-- **Supply Chain Security**: Package integrity verification and suspicious package detection
-- **Secrets Detection**: TruffleHog scans for accidentally committed secrets
-- **Automated Updates**: Dependabot provides timely security updates
-
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in skoglib, please report it responsibly:
+The SkogAI team takes security seriously. If you discover a security vulnerability in skoglib, please report it responsibly.
 
 ### How to Report
 
-1. **Do NOT create a public GitHub issue** for security vulnerabilities
-2. Send an email to: **security@skogai.com**
-3. Include the following information:
-   - Description of the vulnerability
-   - Steps to reproduce the issue
-   - Potential impact assessment
-   - Suggested fix (if available)
+1. **Email**: Send details to security@skogai.com
+2. **GitHub Security Advisories**: Use GitHub's private vulnerability reporting feature
+3. **Encrypted Communication**: Contact maintainers for PGP keys if needed
 
-### What to Expect
+### What to Include
 
-- **Acknowledgment**: We will acknowledge receipt within 24 hours
-- **Initial Assessment**: We will provide an initial assessment within 72 hours
-- **Regular Updates**: We will send updates every 7 days during investigation
-- **Resolution Timeline**: We aim to resolve critical vulnerabilities within 30 days
+Please include the following information in your report:
 
-### Security Response Process
+- Description of the vulnerability
+- Steps to reproduce the issue
+- Potential impact and attack scenarios
+- Suggested fixes or mitigations (if any)
+- Your contact information
 
-1. **Vulnerability Assessment**: We evaluate the severity and impact
-2. **Fix Development**: We develop and test a security fix
-3. **Security Advisory**: We prepare a security advisory (if applicable)
-4. **Coordinated Disclosure**: We coordinate release timing with the reporter
-5. **Public Disclosure**: We publish the fix and advisory simultaneously
+### Response Timeline
 
-## Security Best Practices
+- **Initial Response**: Within 48 hours
+- **Investigation**: Within 7 days
+- **Fix Release**: Within 30 days for critical issues, 90 days for others
+- **Public Disclosure**: After fix is released and users have time to update
 
-When using skoglib in your projects:
+### Vulnerability Disclosure Process
 
-### Safe Usage Guidelines
+1. **Private Report**: Vulnerability reported privately
+2. **Acknowledgment**: We confirm receipt and begin investigation
+3. **Assessment**: We evaluate the impact and severity
+4. **Fix Development**: We develop and test a fix
+5. **Release**: Security fix is released
+6. **Disclosure**: Public disclosure after users have time to update
 
-```python
-from skoglib import run_executable
+## Security Considerations
 
-# ✅ Good: Use explicit arguments
-result = run_executable('ls', ['-la', '/safe/path'])
+### Subprocess Execution
 
-# ❌ Avoid: Shell injection risks
-# Don't construct commands from user input without validation
-user_input = get_user_input()  # Could be malicious
-result = run_executable('sh', ['-c', user_input])  # Dangerous!
+skoglib executes external commands through Python's `subprocess` module. While we implement security best practices, users should be aware that:
 
-# ✅ Better: Validate and sanitize user input
-if is_safe_command(user_input):
-    result = run_executable('sh', ['-c', user_input])
-```
+- Never pass untrusted input directly to `run_executable()`
+- Validate and sanitize all user inputs before execution
+- Be cautious with shell metacharacters in arguments
+- Use absolute paths for executables when possible
 
-### Environment Security
+### Environment Variables
 
-- **Principle of Least Privilege**: Run with minimal required permissions
-- **Input Validation**: Always validate user inputs before passing to skoglib
-- **Path Restrictions**: Limit executable paths to known safe directories
-- **Timeout Settings**: Use appropriate timeouts to prevent resource exhaustion
-- **Error Handling**: Handle exceptions securely without exposing sensitive details
+When using environment variables:
 
-### Production Deployment
+- Avoid passing sensitive data through environment variables
+- Be aware that environment variables may be logged or visible to other processes
+- Use secure secret management systems for sensitive configuration
 
-- **Regular Updates**: Keep skoglib updated to the latest version
-- **Dependency Monitoring**: Monitor dependencies for known vulnerabilities
-- **Logging Configuration**: Configure logging appropriately for your security requirements
-- **Resource Limits**: Set appropriate resource limits for subprocess execution
-- **Network Security**: Consider network restrictions for executable operations
+### File System Access
 
-## Security Updates
+- The library respects working directory changes
+- Be cautious with relative paths in untrusted environments
+- Ensure proper file permissions on executables and working directories
 
-### Notification Channels
+## Security Best Practices for Users
 
-Stay informed about security updates:
+1. **Input Validation**: Always validate inputs before passing to skoglib functions
+2. **Principle of Least Privilege**: Run with minimal required permissions
+3. **Path Validation**: Use absolute paths or validate PATH contents
+4. **Error Handling**: Don't expose sensitive information in error messages
+5. **Logging**: Be careful not to log sensitive information
 
-- **GitHub Security Advisories**: Watch the repository for security advisories
-- **Release Notes**: Check release notes for security-related changes
-- **Email Notifications**: Subscribe to security update notifications
+## Security Scanning
 
-### Update Process
+This project uses automated security scanning:
 
-When security updates are available:
+- **Static Analysis**: Bandit for Python security issues
+- **Dependency Scanning**: Safety for known vulnerabilities
+- **Supply Chain**: Verification of dependency integrity
 
-1. **Review the Advisory**: Understand the vulnerability and impact
-2. **Test in Staging**: Test the update in a non-production environment
-3. **Deploy Promptly**: Apply security updates as soon as possible
-4. **Verify Fix**: Confirm the vulnerability is resolved
+## Acknowledgments
 
-## Compliance and Standards
+We appreciate the security research community's efforts in responsibly disclosing vulnerabilities. Contributors will be acknowledged in release notes unless they prefer to remain anonymous.
 
-skoglib follows industry security standards:
-
-- **OWASP Guidelines**: We follow OWASP secure coding practices
-- **Python Security**: We adhere to Python security recommendations
-- **Supply Chain Security**: We implement SLSA (Supply-chain Levels for Software Artifacts) practices
-- **Vulnerability Disclosure**: We follow responsible disclosure practices
-
-## Security Contact
+## Contact
 
 For security-related questions or concerns:
+- Email: security@skogai.com
+- GitHub: Create a private security advisory
 
-- **Email**: security@skogai.com
-- **GPG Key**: Available upon request
-- **Response Time**: 24-48 hours for initial response
-
-## Hall of Fame
-
-We recognize security researchers who help improve skoglib's security:
-
-<!-- Security researchers who have reported vulnerabilities will be listed here -->
-
----
-
-Last updated: January 2025
-Next review: April 2025
+For general questions about skoglib:
+- GitHub Issues: For non-security bugs and feature requests
+- GitHub Discussions: For questions and community discussion
