@@ -45,7 +45,7 @@ class TestLoggingIntegration(TestCase):
         """Test logging for successful executable execution."""
         try:
             # Use a simple command that should exist on most systems
-            result = run_executable("echo", ["test message"])
+            _result = run_executable("echo", ["test message"])
             
             # Should have logged debug messages about execution
             self.mock_handler.handle.assert_called()

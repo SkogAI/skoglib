@@ -1,0 +1,25 @@
+#!/bin/bash
+# Mock tool that processes files
+if [ $# -eq 0 ]; then
+    echo "Usage: file_processor <input_file> [output_file]" >&2
+    exit 1
+fi
+
+input_file="$1"
+output_file="${2:-processed_output.txt}"
+
+if [ ! -f "$input_file" ]; then
+    echo "Error: Input file '$input_file' not found" >&2
+    exit 1
+fi
+
+echo "Processing file: $input_file"
+echo "Lines processed: $(wc -l < "$input_file")"
+echo "Characters processed: $(wc -c < "$input_file")"
+
+# Simulate processing by copying with a prefix
+while IFS= read -r line; do
+    echo "PROCESSED: $line"
+done < "$input_file" > "$output_file"
+
+echo "Output written to: $output_file"

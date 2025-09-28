@@ -1,0 +1,83 @@
+# Dependabot configuration for automated dependency updates
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "SkogAI/maintainers"
+    assignees:
+      - "SkogAI/maintainers"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    # Group related updates to reduce PR noise
+    groups:
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "mypy*" 
+          - "ruff*"
+          - "bandit*"
+          - "coverage*"
+        update-types:
+          - "minor"
+          - "patch"
+      testing-dependencies:
+        patterns:
+          - "*test*"
+          - "*mock*"
+          - "*fixture*"
+      security-dependencies:
+        patterns:
+          - "*security*"
+          - "*crypto*"
+          - "*auth*"
+        update-types:
+          - "patch"
+    # Only create PRs for security updates on weekends
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+        update-type: "security"
+    ignore:
+      # Ignore major version updates for these stable packages
+      - dependency-name: "python-dotenv"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions dependencies  
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday" 
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "SkogAI/maintainers"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

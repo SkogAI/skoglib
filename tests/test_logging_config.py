@@ -10,9 +10,8 @@ import tempfile
 import time
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
-import pytest
 
 from skoglib.logging_config import (
     configure_logging,
@@ -403,7 +402,7 @@ class TestLoggingIntegration(TestCase):
         # Clear any previous calls
         self.mock_handler.reset_mock()
         
-        with get_performance_logger("integration_test") as perf:
+        with get_performance_logger("integration_test"):
             time.sleep(0.001)  # Small delay to ensure timing
         
         # Should have logged the performance timing
