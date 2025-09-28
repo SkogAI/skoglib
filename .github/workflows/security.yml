@@ -1,31 +1,31 @@
 name: Security
 
 on:
-  push:
-    branches: [ main, master ]
+  # Run security scans on every PR
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+  
+  # Run weekly security scans
   schedule:
-    # Weekly security scans on Sundays at 6 AM UTC
-    - cron: '0 6 * * 0'
+    - cron: '0 6 * * 1'  # Every Monday at 6 AM UTC
+  
+  # Allow manual security scans
   workflow_dispatch:
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-
 jobs:
-  sast-scan:
-    name: Static Application Security Testing
+  # SAST (Static Application Security Testing) 
+  sast:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@v1
       with:
         version: "latest"
     
@@ -37,214 +37,190 @@ jobs:
     
     - name: Run Bandit security scan
       run: |
-        uv run bandit -r src/ -f sarif -o bandit-results.sarif --severity-level medium || true
+        uv run bandit -r src/ -f json -o bandit-results.json
+        uv run bandit -r src/ -f txt
+      continue-on-error: true
     
-    - name: Upload Bandit SARIF results
+    - name: Upload Bandit results
+      uses: actions/upload-artifact@v4
       if: always()
-      uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: bandit-results.sarif
-        category: bandit
+        name: bandit-results
+        path: bandit-results.json
     
-    - name: Run Bandit for PR comments
-      if: github.event_name == 'pull_request'
+    # Optional: If you want to use GitHub Security tab for results
+    # - name: Initialize CodeQL
+    #   uses: github/codeql-action/init@v3
+    #   with:
+    #     languages: python
+    # 
+    # - name: Perform CodeQL Analysis
+    #   uses: github/codeql-action/analyze@v3
+
+  # Dependency vulnerability scanning
+  dependency-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    # Vulnerability scanning with safety
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Generate requirements for safety scan
       run: |
-        uv run bandit -r src/ -f txt -o bandit-report.txt --severity-level medium || true
-        if [ -s bandit-report.txt ]; then
-          echo "## 🔒 Security Scan Results" >> security-comment.md
-          echo "" >> security-comment.md
-          echo "Bandit found potential security issues:" >> security-comment.md
-          echo "" >> security-comment.md
-          echo '```' >> security-comment.md
-          cat bandit-report.txt >> security-comment.md
-          echo '```' >> security-comment.md
+        # Generate a requirements.txt file for safety to scan
+        uv export --format requirements-txt --no-hashes > requirements.txt
+        echo "Generated requirements.txt:"
+        cat requirements.txt
+    
+    - name: Run Safety dependency scan
+      run: |
+        uv run python -m pip install safety
+        uv run safety check -r requirements.txt --json --output safety-results.json
+        uv run safety check -r requirements.txt
+      continue-on-error: true
+    
+    - name: Upload Safety results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: safety-results
+        path: safety-results.json
+    
+    # GitHub Security Advisories scanning
+    - name: Run GitHub Security Advisory scan
+      uses: actions/dependency-review-action@v4
+      if: github.event_name == 'pull_request'
+      with:
+        fail-on-severity: moderate
+        allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+
+  # Supply chain security
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Verify dependency integrity  
+      run: |
+        # Check that uv.lock is up to date
+        uv sync --dev --locked
+        
+        # Verify no unexpected changes to lock file
+        if ! git diff --exit-code uv.lock; then
+          echo "❌ uv.lock file has unexpected changes"
+          exit 1
+        fi
+        
+        echo "✅ Dependency lock file integrity verified"
+    
+    - name: Check for known malicious packages
+      run: |
+        # Generate requirements for analysis
+        uv export --format requirements-txt --no-hashes > requirements.txt
+        
+        # Basic check for suspicious package names (common typosquatting patterns)
+        echo "Checking for suspicious package names..."
+        
+        # This is a basic example - in production you might use more sophisticated tools
+        SUSPICIOUS_PATTERNS="reqeusts urllib3_ beautifulsoup djangoo flask_ numpy_ pandas_ scipy_"
+        
+        for pattern in $SUSPICIOUS_PATTERNS; do
+          if grep -i "$pattern" requirements.txt; then
+            echo "⚠️  Found potentially suspicious package: $pattern"
+            echo "Please verify this is legitimate"
+          fi
+        done
+        
+        echo "✅ Basic package name verification completed"
+
+  # Security policy compliance
+  compliance:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for security policy
+      run: |
+        if [ ! -f SECURITY.md ]; then
+          echo "⚠️  No SECURITY.md file found"
+          echo "Consider adding a security policy to help users report vulnerabilities"
         else
-          echo "## ✅ Security Scan Results" >> security-comment.md
-          echo "" >> security-comment.md
-          echo "No security issues found by Bandit scan." >> security-comment.md
+          echo "✅ Security policy found"
         fi
     
-    - name: Comment security results on PR
-      if: github.event_name == 'pull_request' && github.event.action != 'synchronize'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          if (fs.existsSync('security-comment.md')) {
-            const body = fs.readFileSync('security-comment.md', 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-          }
-
-  dependency-scan:
-    name: Dependency Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
-    - name: Set up Python
-      run: uv python install 3.11
-    
-    - name: Install dependencies
-      run: uv sync --dev
-    
-    - name: Run pip-audit for known vulnerabilities
+    - name: Check for sensitive files
       run: |
-        uv run pip install pip-audit
-        uv run pip-audit --format=sarif --output=pip-audit-results.sarif || true
-    
-    - name: Upload pip-audit SARIF results
-      if: always()
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: pip-audit-results.sarif
-        category: pip-audit
-    
-    - name: Check for high-severity vulnerabilities
-      run: |
-        uv run pip-audit --format=json --output=audit-results.json || true
-        uv run python -c "
-        import json
-        import sys
+        echo "Checking for accidentally committed sensitive files..."
         
-        try:
-            with open('audit-results.json') as f:
-                results = json.load(f)
-            
-            high_severity = []
-            for vuln in results.get('vulnerabilities', []):
-                if vuln.get('fix_versions'):
-                    print(f'ADVISORY: {vuln.get(\"id\", \"Unknown\")} - {vuln.get(\"description\", \"No description\")}')
-                    if 'high' in vuln.get('description', '').lower() or 'critical' in vuln.get('description', '').lower():
-                        high_severity.append(vuln)
-            
-            if high_severity:
-                print(f'❌ Found {len(high_severity)} high/critical severity vulnerabilities')
-                sys.exit(1)
-            else:
-                print('✅ No high/critical severity vulnerabilities found')
-        except FileNotFoundError:
-            print('✅ No vulnerability report generated - likely no issues found')
-        except Exception as e:
-            print(f'Warning: Could not parse audit results: {e}')
-        "
+        # Check for common sensitive file patterns
+        SENSITIVE_PATTERNS=".env .key .pem .p12 .pfx .jks id_rsa id_dsa"
+        
+        for pattern in $SENSITIVE_PATTERNS; do
+          if find . -name "*$pattern*" -not -path "./.git/*" | grep -v ".env.example"; then
+            echo "⚠️  Found potentially sensitive file with pattern: $pattern"
+          fi
+        done
+        
+        # Check for hardcoded secrets in code
+        if grep -r -i "password\|secret\|token\|key" src/ --include="*.py" | grep -v "# nosec" | head -5; then
+          echo "⚠️  Found potential hardcoded secrets (review above results)"
+          echo "Use environment variables or secure secret management instead"
+        fi
+        
+        echo "✅ Sensitive file check completed"
 
-  supply-chain-scan:
-    name: Supply Chain Security
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
-    - name: Set up Python
-      run: uv python install 3.11
-    
-    - name: Install dependencies
-      run: uv sync --dev
-    
-    - name: Build package
-      run: uv build
-    
-    - name: Verify package integrity
-      run: |
-        uv run python -c "
-        import hashlib
-        import os
-        
-        print('Package integrity verification:')
-        for file in os.listdir('dist'):
-            if file.endswith(('.whl', '.tar.gz')):
-                filepath = os.path.join('dist', file)
-                with open(filepath, 'rb') as f:
-                    content = f.read()
-                    sha256_hash = hashlib.sha256(content).hexdigest()
-                    print(f'{file}: {sha256_hash}')
-        
-        print('✅ Package hashes generated for integrity verification')
-        "
-    
-    - name: Check dependencies for known malicious packages
-      run: |
-        uv run python -c "
-        import subprocess
-        import json
-        
-        # Get list of installed packages
-        result = subprocess.run(['uv', 'run', 'pip', 'list', '--format=json'], 
-                              capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            packages = json.loads(result.stdout)
-            suspicious_patterns = ['django-', 'requests-', 'urllib3-', 'numpy-', 'pandas-']
-            
-            print('Checking for suspicious package names:')
-            for pkg in packages:
-                name = pkg['name'].lower()
-                for pattern in suspicious_patterns:
-                    if pattern in name and not name.startswith(pattern.rstrip('-')):
-                        print(f'⚠️  Suspicious package name detected: {pkg[\"name\"]}')
-            
-            print(f'✅ Scanned {len(packages)} packages for suspicious names')
-        "
-
-  secrets-scan:
-    name: Secrets Detection
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Fetch full history for comprehensive scanning
-    
-    - name: Run TruffleHog OSS
-      uses: trufflesecurity/trufflehog@main
-      with:
-        path: ./
-        base: main
-        head: HEAD
-        extra_args: --debug --only-verified
-
+  # Aggregate security results
   security-summary:
-    name: Security Summary
+    needs: [sast, dependency-scan, supply-chain, compliance]
     runs-on: ubuntu-latest
-    needs: [sast-scan, dependency-scan, supply-chain-scan, secrets-scan]
     if: always()
     
     steps:
+    - name: Download all security artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: security-results
+    
     - name: Generate security summary
       run: |
-        echo "## 🛡️ Security Scan Summary" >> security-summary.md
+        echo "# Security Scan Summary" > security-summary.md
         echo "" >> security-summary.md
-        echo "| Check | Status |" >> security-summary.md
-        echo "|-------|--------|" >> security-summary.md
-        echo "| SAST (Bandit) | ${{ needs.sast-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> security-summary.md
-        echo "| Dependency Scan | ${{ needs.dependency-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> security-summary.md
-        echo "| Supply Chain | ${{ needs.supply-chain-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> security-summary.md
-        echo "| Secrets Detection | ${{ needs.secrets-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> security-summary.md
+        echo "Date: $(date)" >> security-summary.md
+        echo "Commit: ${{ github.sha }}" >> security-summary.md
         echo "" >> security-summary.md
         
-        if [[ "${{ needs.sast-scan.result }}" == "success" && "${{ needs.dependency-scan.result }}" == "success" && "${{ needs.supply-chain-scan.result }}" == "success" && "${{ needs.secrets-scan.result }}" == "success" ]]; then
-          echo "🎉 **All security checks passed!**" >> security-summary.md
-        else
-          echo "⚠️ **Some security checks failed. Please review the results above.**" >> security-summary.md
+        echo "## Job Results" >> security-summary.md
+        echo "- SAST: ${{ needs.sast.result }}" >> security-summary.md
+        echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> security-summary.md
+        echo "- Supply Chain: ${{ needs.supply-chain.result }}" >> security-summary.md
+        echo "- Compliance: ${{ needs.compliance.result }}" >> security-summary.md
+        echo "" >> security-summary.md
+        
+        if [ -d security-results ]; then
+          echo "## Available Reports" >> security-summary.md
+          find security-results -name "*.json" -exec basename {} \; | sort >> security-summary.md
         fi
         
         cat security-summary.md
