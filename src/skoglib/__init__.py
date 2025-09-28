@@ -19,6 +19,8 @@ from .exceptions import (
     SkogAIError,
     ExecutableNotFoundError, 
     ExecutionError,
+    TimeoutError,
+    PermissionError,
     ConfigurationError
 )
 from .logging_config import (
@@ -52,6 +54,8 @@ __all__ = [
     "SkogAIError",
     "ExecutableNotFoundError",
     "ExecutionError", 
+    "TimeoutError",
+    "PermissionError",
     "ConfigurationError",
     
     # Logging configuration
