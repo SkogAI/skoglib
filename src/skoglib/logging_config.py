@@ -107,6 +107,10 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Configured logger instance
     """
+    # Special case: "root" returns the base skoglib logger for backward compatibility
+    if name == "root":
+        return logging.getLogger(LOGGER_PREFIX)
+    
     if not name.startswith(LOGGER_PREFIX):
         name = f"{LOGGER_PREFIX}.{name}"
 
@@ -136,10 +140,10 @@ def configure_logging(
     # Convert string level to int if needed
     if isinstance(level, str):
         level = getattr(logging, level.upper(), DEFAULT_LOG_LEVEL)
-
-    # Get the root skoglib logger
-    root_logger = get_logger("root")
-
+    
+    # Get the base skoglib logger (parent of all skoglib loggers)
+    root_logger = logging.getLogger(LOGGER_PREFIX)
+    
     # Only configure once unless forced
     if root_logger.handlers and not force:
         return
