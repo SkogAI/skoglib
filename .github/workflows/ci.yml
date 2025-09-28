@@ -1,0 +1,165 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Run tests with coverage
+      run: uv run pytest --cov=src/skoglib --cov-report=xml --cov-report=term-missing
+    
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+        verbose: true
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Lint with ruff
+      run: uv run ruff check --output-format=github .
+    
+    - name: Format check with ruff
+      run: uv run ruff format --check .
+    
+    - name: Type checking with mypy
+      run: uv run mypy src/
+    
+    - name: Security scan with bandit
+      run: uv run bandit -r src/ -f json -o bandit-report.json || true
+    
+    - name: Upload bandit results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bandit-report
+        path: bandit-report.json
+
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Run performance tests
+      run: |
+        uv run python -c "
+        import time
+        import sys
+        
+        # Test import time
+        start = time.time()
+        import skoglib
+        import_time = (time.time() - start) * 1000
+        print(f'Import time: {import_time:.2f}ms')
+        
+        # Test basic execution performance
+        from skoglib import run_executable
+        start = time.time()
+        result = run_executable('echo', ['test'])
+        exec_time = (time.time() - start) * 1000
+        print(f'Execution time: {exec_time:.2f}ms')
+        
+        # Validate performance requirements
+        if import_time > 50:
+            print(f'ERROR: Import time {import_time:.2f}ms exceeds 50ms limit')
+            sys.exit(1)
+        if exec_time > 100:  # Allow more time for subprocess overhead
+            print(f'ERROR: Execution time {exec_time:.2f}ms exceeds 100ms limit')
+            sys.exit(1)
+            
+        print('✅ Performance requirements met')
+        "
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Build package
+      run: uv build
+    
+    - name: Verify build artifacts
+      run: |
+        ls -la dist/
+        uv run python -c "
+        import os
+        import sys
+        files = os.listdir('dist')
+        wheel_files = [f for f in files if f.endswith('.whl')]
+        sdist_files = [f for f in files if f.endswith('.tar.gz')]
+        if not wheel_files:
+            print('ERROR: No wheel file found')
+            sys.exit(1)
+        if not sdist_files:
+            print('ERROR: No source distribution found')
+            sys.exit(1)
+        print(f'✅ Build successful: {len(wheel_files)} wheel(s), {len(sdist_files)} sdist(s)')
+        "
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-files
+        path: dist/

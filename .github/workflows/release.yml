@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: 'Publish to Test PyPI instead of PyPI'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC trusted publishing
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.test_pypi && 'test-pypi' || 'pypi' }}
+      url: ${{ inputs.test_pypi && 'https://test.pypi.org/p/skoglib' || 'https://pypi.org/p/skoglib' }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      run: uv python install 3.11
+    
+    - name: Install dependencies
+      run: uv sync --dev
+    
+    - name: Run quality checks
+      run: |
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run mypy src/
+    
+    - name: Run tests
+      run: uv run pytest --cov=src/skoglib
+    
+    - name: Build package
+      run: uv build
+    
+    - name: Verify package contents
+      run: |
+        uv run python -c "
+        import tarfile
+        import zipfile
+        import os
+        
+        # Check wheel contents
+        wheel_files = [f for f in os.listdir('dist') if f.endswith('.whl')]
+        if wheel_files:
+            with zipfile.ZipFile(f'dist/{wheel_files[0]}', 'r') as z:
+                files = z.namelist()
+                print('Wheel contents:')
+                for f in sorted(files):
+                    print(f'  {f}')
+                    
+                # Verify key files are present
+                py_files = [f for f in files if f.endswith('.py') and 'skoglib' in f]
+                if not py_files:
+                    print('ERROR: No Python files found in wheel')
+                    exit(1)
+        
+        # Check sdist contents  
+        sdist_files = [f for f in os.listdir('dist') if f.endswith('.tar.gz')]
+        if sdist_files:
+            with tarfile.open(f'dist/{sdist_files[0]}', 'r:gz') as t:
+                files = t.getnames()
+                print('Source distribution contents:')
+                for f in sorted(files):
+                    print(f'  {f}')
+        
+        print('✅ Package verification successful')
+        "
+    
+    - name: Publish to Test PyPI
+      if: inputs.test_pypi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        verbose: true
+    
+    - name: Publish to PyPI
+      if: github.event_name == 'release' && !inputs.test_pypi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        verbose: true
+    
+    - name: Create GitHub Release Assets
+      if: github.event_name == 'release'
+      run: |
+        # Upload wheel and source distribution as release assets
+        gh release upload ${{ github.event.release.tag_name }} dist/* --clobber
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate-release:
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Wait for PyPI propagation
+      run: sleep 60
+    
+    - name: Install from PyPI and test
+      run: |
+        pip install skoglib
+        python -c "
+        import skoglib
+        from skoglib import run_executable
+        
+        # Test basic functionality
+        result = run_executable('echo', ['Hello from PyPI'])
+        assert result.success
+        assert 'Hello from PyPI' in result.stdout
+        
+        print('✅ PyPI installation successful')
+        print(f'Version: {skoglib.__version__}')
+        "

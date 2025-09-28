@@ -19,7 +19,9 @@ _import_start = time.perf_counter()
 # Default configuration constants
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-DETAILED_FORMAT = "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(funcName)s(): %(message)s"
+DETAILED_FORMAT = (
+    "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(funcName)s(): %(message)s"
+)
 
 # Logger name prefix for all skoglib loggers
 LOGGER_PREFIX = "skoglib"
@@ -28,14 +30,14 @@ LOGGER_PREFIX = "skoglib"
 class SkogLibFormatter(logging.Formatter):
     """
     Custom formatter for skoglib that provides structured logging capabilities.
-    
+
     Supports both simple and detailed formats based on log level and configuration.
     """
-    
+
     def __init__(self, detailed: bool = False):
         """
         Initialize the formatter.
-        
+
         Args:
             detailed: If True, use detailed format with line numbers and function names
         """
@@ -43,7 +45,7 @@ class SkogLibFormatter(logging.Formatter):
         self.simple_format = DEFAULT_FORMAT
         self.detailed_format = DETAILED_FORMAT
         super().__init__()
-    
+
     def format(self, record: logging.LogRecord) -> str:
         """Format the log record with appropriate detail level."""
         # Use detailed format for DEBUG level or when explicitly requested
@@ -51,21 +53,23 @@ class SkogLibFormatter(logging.Formatter):
             self._style._fmt = self.detailed_format
         else:
             self._style._fmt = self.simple_format
-        
+
         return super().format(record)
 
 
 class PerformanceLogger:
     """
     Context manager for performance logging with minimal overhead.
-    
+
     Only logs timing information when DEBUG level is enabled.
     """
-    
-    def __init__(self, logger: logging.Logger, operation: str, threshold_ms: float = 10.0):
+
+    def __init__(
+        self, logger: logging.Logger, operation: str, threshold_ms: float = 10.0
+    ):
         """
         Initialize performance logger.
-        
+
         Args:
             logger: Logger instance to use
             operation: Description of the operation being timed
@@ -75,13 +79,18 @@ class PerformanceLogger:
         self.operation = operation
         self.threshold_ms = threshold_ms
         self.start_time: Optional[float] = None
-    
+
     def __enter__(self) -> "PerformanceLogger":
         if self.logger.isEnabledFor(logging.DEBUG):
             self.start_time = time.perf_counter()
         return self
-    
-    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[Any]) -> None:
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
         if self.start_time is not None:
             duration_ms = (time.perf_counter() - self.start_time) * 1000
             if duration_ms >= self.threshold_ms:
@@ -91,16 +100,16 @@ class PerformanceLogger:
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance with the skoglib prefix.
-    
+
     Args:
         name: Logger name (will be prefixed with 'skoglib.')
-        
+
     Returns:
         Configured logger instance
     """
     if not name.startswith(LOGGER_PREFIX):
         name = f"{LOGGER_PREFIX}.{name}"
-    
+
     return logging.getLogger(name)
 
 
@@ -109,16 +118,16 @@ def configure_logging(
     format_style: str = "simple",
     output: Optional[Union[str, Path]] = None,
     console: bool = True,
-    force: bool = False
+    force: bool = False,
 ) -> None:
     """
     Configure logging for skoglib.
-    
+
     This is the main configuration entry point. It sets up formatters, handlers,
     and the root skoglib logger with sensible defaults.
-    
+
     Args:
-        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) 
+        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         format_style: 'simple' or 'detailed' formatting
         output: Optional file path for log output
         console: Whether to log to console (default: True)
@@ -127,56 +136,58 @@ def configure_logging(
     # Convert string level to int if needed
     if isinstance(level, str):
         level = getattr(logging, level.upper(), DEFAULT_LOG_LEVEL)
-    
+
     # Get the root skoglib logger
     root_logger = get_logger("root")
-    
+
     # Only configure once unless forced
     if root_logger.handlers and not force:
         return
-    
+
     # Clear existing handlers if forcing reconfiguration
     if force:
         root_logger.handlers.clear()
-    
+
     # Create formatter
     detailed = format_style == "detailed"
     formatter = SkogLibFormatter(detailed=detailed)
-    
+
     # Configure console handler
     if console:
         console_handler = logging.StreamHandler(sys.stderr)
         console_handler.setFormatter(formatter)
         console_handler.setLevel(level)
         root_logger.addHandler(console_handler)
-    
+
     # Configure file handler if requested
     if output:
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Use rotating file handler to prevent log files from growing too large
         file_handler = logging.handlers.RotatingFileHandler(
             output_path,
             maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5
+            backupCount=5,
         )
         file_handler.setFormatter(formatter)
         file_handler.setLevel(level)
         root_logger.addHandler(file_handler)
-    
+
     # Set the logger level
     root_logger.setLevel(level)
-    
+
     # Log configuration completion at DEBUG level
-    root_logger.debug(f"Logging configured: level={logging.getLevelName(level)}, "
-                     f"format={format_style}, console={console}, file={output}")
+    root_logger.debug(
+        f"Logging configured: level={logging.getLevelName(level)}, "
+        f"format={format_style}, console={console}, file={output}"
+    )
 
 
 def configure_from_env() -> None:
     """
     Configure logging based on environment variables.
-    
+
     Supported environment variables:
     - SKOGLIB_LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     - SKOGLIB_LOG_FORMAT: Format style ('simple' or 'detailed')
@@ -187,26 +198,23 @@ def configure_from_env() -> None:
     format_style = os.getenv("SKOGLIB_LOG_FORMAT", "simple").lower()
     log_file = os.getenv("SKOGLIB_LOG_FILE")
     console = os.getenv("SKOGLIB_LOG_CONSOLE", "true").lower() == "true"
-    
+
     # Validate format style
     if format_style not in ("simple", "detailed"):
         format_style = "simple"
-    
+
     configure_logging(
-        level=level,
-        format_style=format_style,
-        output=log_file,
-        console=console
+        level=level, format_style=format_style, output=log_file, console=console
     )
 
 
 def get_performance_logger(name: str) -> PerformanceLogger:
     """
     Create a performance logger for timing operations.
-    
+
     Args:
         name: Name of the operation being timed
-        
+
     Returns:
         PerformanceLogger context manager
     """
@@ -216,7 +224,10 @@ def get_performance_logger(name: str) -> PerformanceLogger:
 
 # Initialize default logging configuration with minimal overhead
 # Only configure if not already done and not in testing environment
-if not os.getenv("PYTEST_CURRENT_TEST") and not logging.getLogger(LOGGER_PREFIX).handlers:
+if (
+    not os.getenv("PYTEST_CURRENT_TEST")
+    and not logging.getLogger(LOGGER_PREFIX).handlers
+):
     try:
         configure_from_env()
     except Exception:
@@ -235,11 +246,11 @@ if _debug_logger.isEnabledFor(logging.DEBUG):
 # Export public interface
 __all__ = [
     "configure_logging",
-    "configure_from_env", 
+    "configure_from_env",
     "get_logger",
     "get_performance_logger",
     "PerformanceLogger",
     "SkogLibFormatter",
     "DEFAULT_LOG_LEVEL",
-    "LOGGER_PREFIX"
+    "LOGGER_PREFIX",
 ]
