@@ -128,8 +128,8 @@ def configure_logging(
     if isinstance(level, str):
         level = getattr(logging, level.upper(), DEFAULT_LOG_LEVEL)
     
-    # Get the root skoglib logger
-    root_logger = get_logger("root")
+    # Get the base skoglib logger (parent of all skoglib loggers)
+    root_logger = logging.getLogger(LOGGER_PREFIX)
     
     # Only configure once unless forced
     if root_logger.handlers and not force:

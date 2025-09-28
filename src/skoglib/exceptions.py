@@ -50,6 +50,7 @@ Usage Examples:
 """
 
 import time
+import logging
 from typing import Optional, Dict, Any, List
 from .logging_config import get_logger
 
@@ -125,7 +126,8 @@ class SkogAIError(Exception):
         self.timestamp = time.time()
         
         # Log error with details for debugging
-        if log_error:
+        # Check if logger is enabled for ERROR level to avoid expensive operations
+        if log_error and logger.isEnabledFor(logging.ERROR):
             if self.details:
                 # Use "Context:" for backward compatibility with existing tests
                 logger.error(f"{message} - Context: {self.details}")
