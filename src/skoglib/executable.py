@@ -419,8 +419,8 @@ def run_executable(
                 executable=str(executable),
                 exit_code=-1,  # Use -1 to indicate timeout
                 command_args=args,
-                stdout=e.stdout.decode("utf-8") if e.stdout else None,
-                stderr=e.stderr.decode("utf-8") if e.stderr else None,
+                stdout=e.stdout.decode("utf-8") if e.stdout and isinstance(e.stdout, bytes) else None,
+                stderr=e.stderr.decode("utf-8") if e.stderr and isinstance(e.stderr, bytes) else None,
                 execution_time=execution_time,
             ) from e
 
