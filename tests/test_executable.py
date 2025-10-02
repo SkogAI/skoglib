@@ -202,6 +202,38 @@ class TestRunExecutable(TestCase):
         self.assertEqual(exception.exit_code, -1)  # Timeout indicator
         self.assertGreater(exception.execution_time, 0.4)  # Should be close to timeout
 
+    def test_timeout_with_no_output(self):
+        """Test timeout handling when there is no output (stdout/stderr are None).
+        
+        This is a regression test for the bug where TimeoutExpired.stdout/stderr
+        being None would cause an AttributeError when trying to decode.
+        """
+        with self.assertRaises(ExecutionError) as cm:
+            # Command that times out without producing output
+            run_executable("sleep", ["2"], timeout=0.1)
+
+        exception = cm.exception
+        self.assertEqual(exception.exit_code, -1)  # Timeout indicator
+        # stdout and stderr should be None when no output was captured
+        self.assertIsNone(exception.stdout)
+        self.assertIsNone(exception.stderr)
+
+    def test_timeout_with_partial_output(self):
+        """Test timeout handling when there is partial output before timeout.
+        
+        This tests that partial output from before timeout is properly captured
+        and decoded from bytes to string.
+        """
+        with self.assertRaises(ExecutionError) as cm:
+            # Command that produces output then sleeps
+            run_executable("bash", ["-c", "echo 'partial output'; sleep 2"], timeout=0.1)
+
+        exception = cm.exception
+        self.assertEqual(exception.exit_code, -1)  # Timeout indicator
+        # Should have captured the partial output that was produced before timeout
+        self.assertIsNotNone(exception.stdout)
+        self.assertIn("partial output", exception.stdout)
+
     def test_capture_output_disabled(self):
         """Test execution with output capture disabled."""
         result = run_executable("echo", ["test"], capture_output=False)
