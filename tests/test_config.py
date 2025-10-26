@@ -36,7 +36,6 @@ class TestSkogAIConfig(TestCase):
 
         # Check default values
         self.assertEqual(config.default_timeout, 30)
-        self.assertEqual(config.max_output_size, 10 * 1024 * 1024)
         self.assertEqual(config.log_level, "INFO")
         self.assertEqual(config.executable_search_paths, [])
         self.assertEqual(config.env_prefix, "SKOGAI")
@@ -45,14 +44,12 @@ class TestSkogAIConfig(TestCase):
         """Test configuration with custom values."""
         config = SkogAIConfig(
             default_timeout=60,
-            max_output_size=20 * 1024 * 1024,
             log_level="DEBUG",
             executable_search_paths=["/usr/local/bin", "/opt/bin"],
             env_prefix="CUSTOM",
         )
 
         self.assertEqual(config.default_timeout, 60)
-        self.assertEqual(config.max_output_size, 20 * 1024 * 1024)
         self.assertEqual(config.log_level, "DEBUG")
         self.assertEqual(config.executable_search_paths, ["/usr/local/bin", "/opt/bin"])
         self.assertEqual(config.env_prefix, "CUSTOM")
@@ -72,22 +69,6 @@ class TestSkogAIConfig(TestCase):
 
         with self.assertRaises(ConfigurationError):
             SkogAIConfig(default_timeout="invalid")
-
-    def test_validation_invalid_max_output_size(self):
-        """Test validation with invalid max_output_size values."""
-        with self.assertRaises(ConfigurationError) as cm:
-            SkogAIConfig(max_output_size=-1)
-
-        error = cm.exception
-        self.assertIn("max_output_size must be a positive integer", error.message)
-        self.assertEqual(error.config_key, "max_output_size")
-        self.assertEqual(error.config_value, -1)
-
-        with self.assertRaises(ConfigurationError):
-            SkogAIConfig(max_output_size=0)
-
-        with self.assertRaises(ConfigurationError):
-            SkogAIConfig(max_output_size="invalid")
 
     def test_validation_invalid_log_level(self):
         """Test validation with invalid log level values."""
@@ -176,7 +157,6 @@ class TestEnvironmentVariableLoading(TestCase):
         config = load_config_from_env()
 
         self.assertEqual(config.default_timeout, 30)
-        self.assertEqual(config.max_output_size, 10 * 1024 * 1024)
         self.assertEqual(config.log_level, "INFO")
         self.assertEqual(config.executable_search_paths, [])
 
@@ -186,13 +166,6 @@ class TestEnvironmentVariableLoading(TestCase):
         config = load_config_from_env()
 
         self.assertEqual(config.default_timeout, 60)
-
-    def test_load_config_max_output_size(self):
-        """Test loading max output size from environment."""
-        os.environ["SKOGAI_MAX_OUTPUT_SIZE"] = "20971520"  # 20MB
-        config = load_config_from_env()
-
-        self.assertEqual(config.max_output_size, 20971520)
 
     def test_load_config_log_level(self):
         """Test loading log level from environment."""
@@ -223,7 +196,6 @@ class TestEnvironmentVariableLoading(TestCase):
         os.environ.update(
             {
                 "SKOGAI_DEFAULT_TIMEOUT": "120",
-                "SKOGAI_MAX_OUTPUT_SIZE": "52428800",  # 50MB
                 "SKOGAI_LOG_LEVEL": "ERROR",
                 "SKOGAI_SEARCH_PATHS": "/custom/bin:/another/path",
             }
@@ -232,7 +204,6 @@ class TestEnvironmentVariableLoading(TestCase):
         config = load_config_from_env()
 
         self.assertEqual(config.default_timeout, 120)
-        self.assertEqual(config.max_output_size, 52428800)
         self.assertEqual(config.log_level, "ERROR")
         self.assertEqual(
             config.executable_search_paths, ["/custom/bin", "/another/path"]
@@ -249,18 +220,6 @@ class TestEnvironmentVariableLoading(TestCase):
         self.assertIn("Invalid value for SKOGAI_DEFAULT_TIMEOUT", error.message)
         self.assertEqual(error.config_key, "default_timeout")
         self.assertEqual(error.config_value, "invalid")
-
-    def test_load_config_invalid_max_output_size(self):
-        """Test loading invalid max output size from environment."""
-        os.environ["SKOGAI_MAX_OUTPUT_SIZE"] = "not_a_number"
-
-        with self.assertRaises(ConfigurationError) as cm:
-            load_config_from_env()
-
-        error = cm.exception
-        self.assertIn("Invalid value for SKOGAI_MAX_OUTPUT_SIZE", error.message)
-        self.assertEqual(error.config_key, "max_output_size")
-        self.assertEqual(error.config_value, "not_a_number")
 
 
 class TestGlobalConfiguration(TestCase):

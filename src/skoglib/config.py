@@ -31,7 +31,6 @@ class SkogAIConfig:
 
     # Execution settings
     default_timeout: int = 30
-    max_output_size: int = 10 * 1024 * 1024  # 10MB
 
     # Logging configuration
     log_level: str = "INFO"
@@ -49,7 +48,6 @@ class SkogAIConfig:
             "Configuration initialized with settings",
             extra={
                 "timeout": self.default_timeout,
-                "max_output_size": self.max_output_size,
                 "log_level": self.log_level,
                 "search_paths_count": len(self.executable_search_paths),
             },
@@ -63,14 +61,6 @@ class SkogAIConfig:
                 "default_timeout must be a positive integer",
                 config_key="default_timeout",
                 config_value=self.default_timeout,
-            )
-
-        # Validate max output size
-        if not isinstance(self.max_output_size, int) or self.max_output_size <= 0:
-            raise ConfigurationError(
-                "max_output_size must be a positive integer",
-                config_key="max_output_size",
-                config_value=self.max_output_size,
             )
 
         # Validate log level
@@ -165,18 +155,6 @@ def load_config_from_env() -> SkogAIConfig:
                 f"Invalid value for {timeout_var}: must be an integer",
                 config_key="default_timeout",
                 config_value=os.environ[timeout_var],
-            ) from e
-
-    # Parse max output size
-    max_size_var = f"{env_prefix}_MAX_OUTPUT_SIZE"
-    if max_size_var in os.environ:
-        try:
-            config_values["max_output_size"] = int(os.environ[max_size_var])
-        except ValueError as e:
-            raise ConfigurationError(
-                f"Invalid value for {max_size_var}: must be an integer",
-                config_key="max_output_size",
-                config_value=os.environ[max_size_var],
             ) from e
 
     # Parse log level
