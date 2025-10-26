@@ -340,11 +340,28 @@ class ExecutionError(SkogAIError):
 
 
 class TimeoutError(ExecutionError):
-    """
-    Raised when executable execution times out.
+    """Raised when executable execution times out.
 
     This error indicates that the executable did not complete within
-    the specified timeout period and was terminated.
+    the specified timeout period and was terminated. It inherits all
+    attributes from ExecutionError, including exit_code (set to -1 for
+    timeouts), stdout, stderr, and execution_time.
+
+    In addition to ExecutionError attributes, TimeoutError provides:
+    - timeout: The timeout duration that was exceeded
+    - partial_stdout: Alias for stdout (partial output before timeout)
+    - partial_stderr: Alias for stderr (partial error output before timeout)
+
+    Attributes:
+        executable: Name of the executable that timed out
+        exit_code: Always -1 for timeout errors
+        command_args: Arguments passed to the executable
+        stdout: Partial standard output captured before timeout
+        stderr: Partial standard error captured before timeout
+        execution_time: Time elapsed before timeout (defaults to timeout value)
+        timeout: Timeout duration in seconds that was exceeded
+        partial_stdout: Alias for stdout
+        partial_stderr: Alias for stderr
     """
 
     def __init__(
@@ -354,6 +371,7 @@ class TimeoutError(ExecutionError):
         command_args: Optional[list[str]] = None,
         partial_stdout: Optional[str] = None,
         partial_stderr: Optional[str] = None,
+        execution_time: Optional[float] = None,
         log_error: bool = True,
     ) -> None:
         """
@@ -365,37 +383,42 @@ class TimeoutError(ExecutionError):
             command_args: Arguments passed to the executable (optional)
             partial_stdout: Partial stdout captured before timeout (optional)
             partial_stderr: Partial stderr captured before timeout (optional)
+            execution_time: Time elapsed before timeout (optional, defaults to timeout)
+            log_error: Whether to log this error (default: True)
         """
-        details = {
-            "timeout": timeout,
-            "suggestions": [
-                f"Increase timeout (currently {timeout}s)",
-                "Check for hanging processes or infinite loops",
-                "Verify input data doesn't cause processing delays",
-                "Consider breaking large tasks into smaller chunks",
-            ],
-        }
-
-        if command_args:
-            details["command_args"] = command_args
-        if partial_stdout:
-            details["partial_stdout"] = partial_stdout
-        if partial_stderr:
-            details["partial_stderr"] = partial_stderr
-
+        # Properly initialize ExecutionError parent with exit_code=-1 for timeout
+        # Map partial outputs to regular outputs for parent class compatibility
+        super().__init__(
+            executable=executable,
+            exit_code=-1,  # Special exit code for timeout as documented in ExecutionError
+            command_args=command_args,
+            stdout=partial_stdout,  # Map partial to regular for parent compatibility
+            stderr=partial_stderr,  # Map partial to regular for parent compatibility
+            execution_time=execution_time if execution_time is not None else timeout,
+            log_error=log_error,
+        )
+        
+        # Override message with timeout-specific format
         cmd_str = executable
         if command_args:
             cmd_str += " " + " ".join(command_args)
-
-        message = f"Command '{cmd_str}' timed out after {timeout} seconds"
-
-        # Call SkogAIError directly to avoid ExecutionError's exit_code requirement
-        SkogAIError.__init__(self, message, details, log_error=log_error)
-        self.executable = executable
+        self.message = f"Command '{cmd_str}' timed out after {timeout} seconds"
+        
+        # Add timeout-specific attributes
         self.timeout = timeout
-        self.command_args = command_args or []
         self.partial_stdout = partial_stdout
         self.partial_stderr = partial_stderr
+        
+        # Add timeout-specific suggestions to details
+        timeout_suggestions = [
+            f"Increase timeout (currently {timeout}s)",
+            "Check for hanging processes or infinite loops",
+            "Verify input data doesn't cause processing delays",
+            "Consider breaking large tasks into smaller chunks",
+        ]
+        # Prepend timeout suggestions to existing suggestions
+        self.details["timeout"] = timeout
+        self.details["suggestions"] = timeout_suggestions + self.details.get("suggestions", [])
 
 
 class PermissionError(ExecutableNotFoundError):
