@@ -409,16 +409,16 @@ class TimeoutError(ExecutionError):
         self.partial_stdout = partial_stdout
         self.partial_stderr = partial_stderr
         
-        # Add timeout-specific suggestions to details
+        # Add timeout-specific suggestions to details (prepend to parent's suggestions)
         timeout_suggestions = [
             f"Increase timeout (currently {timeout}s)",
             "Check for hanging processes or infinite loops",
             "Verify input data doesn't cause processing delays",
             "Consider breaking large tasks into smaller chunks",
         ]
-        # Prepend timeout suggestions to existing suggestions
         self.details["timeout"] = timeout
-        self.details["suggestions"] = timeout_suggestions + self.details.get("suggestions", [])
+        self.details["suggestions"] = timeout_suggestions + self.details["suggestions"]
+
 
 
 class PermissionError(ExecutableNotFoundError):

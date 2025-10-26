@@ -14,7 +14,7 @@ from skoglib import TimeoutError, ExecutionError, SkogAIError
 class TestTimeoutErrorContract(unittest.TestCase):
     """Test that TimeoutError properly implements the ExecutionError contract."""
 
-    def test_timeout_error_has_exit_code_attribute(self):
+    def test_timeout_error_has_exit_code_attribute(self) -> None:
         """Test that TimeoutError has exit_code attribute from ExecutionError."""
         error = TimeoutError(
             executable="test-cmd",
@@ -27,7 +27,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         self.assertTrue(hasattr(error, "exit_code"))
         self.assertEqual(error.exit_code, -1)
 
-    def test_timeout_error_has_execution_time_attribute(self):
+    def test_timeout_error_has_execution_time_attribute(self) -> None:
         """Test that TimeoutError has execution_time attribute from ExecutionError."""
         error = TimeoutError(
             executable="test-cmd",
@@ -40,7 +40,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         self.assertTrue(hasattr(error, "execution_time"))
         self.assertEqual(error.execution_time, 25.5)
 
-    def test_timeout_error_execution_time_defaults_to_timeout(self):
+    def test_timeout_error_execution_time_defaults_to_timeout(self) -> None:
         """Test that execution_time defaults to timeout if not provided."""
         error = TimeoutError(
             executable="test-cmd",
@@ -51,7 +51,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         # execution_time should default to timeout
         self.assertEqual(error.execution_time, 30.0)
 
-    def test_timeout_error_has_stdout_stderr_attributes(self):
+    def test_timeout_error_has_stdout_stderr_attributes(self) -> None:
         """Test that TimeoutError has stdout/stderr attributes from ExecutionError."""
         error = TimeoutError(
             executable="test-cmd",
@@ -67,7 +67,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         self.assertEqual(error.stdout, "output")
         self.assertEqual(error.stderr, "error")
 
-    def test_timeout_error_has_partial_stdout_stderr_aliases(self):
+    def test_timeout_error_has_partial_stdout_stderr_aliases(self) -> None:
         """Test that TimeoutError maintains partial_stdout/stderr aliases."""
         error = TimeoutError(
             executable="test-cmd",
@@ -83,7 +83,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         self.assertEqual(error.partial_stdout, "output")
         self.assertEqual(error.partial_stderr, "error")
 
-    def test_timeout_error_can_be_caught_as_execution_error(self):
+    def test_timeout_error_can_be_caught_as_execution_error(self) -> None:
         """Test that TimeoutError can be caught as ExecutionError."""
         try:
             raise TimeoutError("test-cmd", timeout=30.0, log_error=False)
@@ -94,7 +94,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
             # Should have exit_code accessible
             self.assertEqual(e.exit_code, -1)
 
-    def test_timeout_error_exit_code_in_error_handling(self):
+    def test_timeout_error_exit_code_in_error_handling(self) -> None:
         """Test that exit_code can be accessed in error handling code."""
         try:
             raise TimeoutError("test-cmd", timeout=30.0, log_error=False)
@@ -106,7 +106,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
             else:
                 self.fail("exit_code should be -1 for timeout")
 
-    def test_timeout_error_serialization_includes_all_attributes(self):
+    def test_timeout_error_serialization_includes_all_attributes(self) -> None:
         """Test that TimeoutError serialization includes all required attributes."""
         error = TimeoutError(
             executable="test-cmd",
@@ -128,7 +128,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         self.assertEqual(error_dict["details"]["execution_time"], 25.5)
         self.assertEqual(error_dict["details"]["timeout"], 30.0)
 
-    def test_timeout_error_maintains_timeout_specific_message(self):
+    def test_timeout_error_maintains_timeout_specific_message(self) -> None:
         """Test that TimeoutError maintains its timeout-specific error message."""
         error = TimeoutError(
             executable="test-cmd",
@@ -141,7 +141,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
         self.assertIn("timed out", error.message.lower())
         self.assertIn("30.0 seconds", str(error))
 
-    def test_timeout_error_has_timeout_specific_suggestions(self):
+    def test_timeout_error_has_timeout_specific_suggestions(self) -> None:
         """Test that TimeoutError includes timeout-specific suggestions."""
         error = TimeoutError(
             executable="test-cmd",
@@ -163,7 +163,7 @@ class TestTimeoutErrorContract(unittest.TestCase):
             hanging_suggestion_found, "Should have hanging process suggestion"
         )
 
-    def test_timeout_error_inherits_from_skogai_error(self):
+    def test_timeout_error_inherits_from_skogai_error(self) -> None:
         """Test that TimeoutError is part of the SkogAIError hierarchy."""
         error = TimeoutError("test-cmd", timeout=30.0, log_error=False)
 
