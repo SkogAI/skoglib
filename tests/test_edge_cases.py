@@ -3,7 +3,7 @@ Test suite for edge cases and critical scenarios not covered in main tests.
 
 This test file addresses specific edge cases identified in issue #44:
 1. TimeoutExpired with None stdout/stderr (critical - would catch bug from #37)
-2. Large output vs max_output_size scenarios
+2. Large output handling scenarios
 3. Concurrent subprocess execution
 4. Windows path edge cases
 
@@ -120,17 +120,15 @@ class TestTimeoutWithNoneOutput(TestCase):
 class TestLargeOutput(TestCase):
     """Test handling of large output streams.
 
-    Tests memory protection and proper handling when output exceeds typical sizes.
-    Note: Currently no max_output_size limit is implemented in the library,
-    so these tests document current behavior.
+    Tests proper handling when output exceeds typical sizes.
+    The library uses subprocess.run() which handles output buffering automatically.
     """
 
     def test_large_stdout_output(self):
         """Test handling of large stdout output (1MB+).
 
         Verifies that large output is captured correctly without truncation
-        or memory issues. If max_output_size were implemented, this would
-        test that behavior.
+        or memory issues.
         """
         print("\n[VERBOSE] Testing large stdout output (1MB+)")
 
